@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "FFConvert",
+  "version": "0.1",
+  "description": "Auto convert downloaded files",
+  "permissions": ["downloads", "nativeMessaging"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
