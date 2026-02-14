@@ -113,6 +113,11 @@ uninstall.bat
 Then remove the extension from your browser.
 
 ## Roadmap
+## v2 Goals
+- Document conversions
+- Audio support
+- Modular conversion engine
+
 
 ### v2
 - Document conversions

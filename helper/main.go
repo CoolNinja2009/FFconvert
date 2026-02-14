@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,70 +22,30 @@ type Response struct {
 }
 
 func logLine(f *os.File, text string) {
-	f.WriteString(time.Now().Format("15:04:05") + " | " + text + "\n")
+	filename := f.Name()
+	entry := time.Now().Format("15:04:05") + " | " + text + "\n"
+
+	old, err := os.ReadFile(filename)
+	if err != nil {
+		// If we can't read (file may not exist yet), just write the entry
+		_ = os.WriteFile(filename, []byte(entry), 0644)
+		return
+	}
+
+	// Prepend new entry
+	newContent := append([]byte(entry), old...)
+	_ = os.WriteFile(filename, newContent, 0644)
 }
 
-func mimeToExt(mime string) string {
-	switch mime {
-	// Images
-	case "image/jpeg":
-		return "jpg"
-	case "image/png":
-		return "png"
-	case "image/webp":
-		return "webp"
-	case "image/avif":
-		return "avif"
-	case "image/gif":
-		return "gif"
-	case "image/bmp":
-		return "bmp"
-	case "image/tiff":
-		return "tiff"
-
-	// Video
-	case "video/mp4":
-		return "mp4"
-	case "video/webm":
-		return "webm"
-	case "video/quicktime":
-		return "mov"
-	case "video/x-msvideo":
-		return "avi"
-	case "video/x-matroska":
-		return "mkv"
-	case "video/ogg":
-		return "ogv"
-
-	default:
-		return ""
-	}
-}
-
-func getType(ext string) string {
-	ext = strings.ToLower(ext)
-
-	image := map[string]bool{
-		"jpg": true, "jpeg": true, "png": true, "webp": true,
-		"avif": true, "gif": true, "bmp": true, "tiff": true,
-	}
-
-	video := map[string]bool{
-		"mp4": true, "mkv": true, "webm": true,
-		"mov": true, "avi": true, "ogv": true,
-	}
-
-	if image[ext] {
-		return "image"
-	}
-	if video[ext] {
-		return "video"
-	}
-	return "unknown"
+func sendResponse(resp Response) {
+	data, _ := json.Marshal(resp)
+	length := uint32(len(data))
+	binary.Write(os.Stdout, binary.LittleEndian, length)
+	os.Stdout.Write(data)
 }
 
 func main() {
-	logFile, _ := os.OpenFile("C:\\ffconvert\\debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, _ := os.OpenFile("C:\\ffconvert\\debug.log", os.O_CREATE|os.O_RDWR, 0644)
 	defer logFile.Close()
 
 	logLine(logFile, "Helper started")
@@ -121,7 +79,7 @@ func main() {
 	logLine(logFile, "Input: "+input)
 	logLine(logFile, "Target: "+targetExt)
 
-	// Detect actual file type
+	// Detect MIME
 	file, err := os.Open(input)
 	if err != nil {
 		logLine(logFile, "Failed to open file")
@@ -137,86 +95,26 @@ func main() {
 		return
 	}
 
-	logLine(logFile, "Detected MIME: "+mtype.String())
+	mime := mtype.String()
+	logLine(logFile, "Detected MIME: "+mime)
 
-	realExt := mimeToExt(mtype.String())
-	if realExt == "" {
+	category := detectCategory(mime)
+
+	if category == "media" {
+		err = convertMedia(input, targetExt, mime, logFile)
+	} else if category == "document" {
+		err = convertDocument(input, targetExt, mime, logFile)
+	} else {
 		logLine(logFile, "Unsupported file type")
 		sendResponse(Response{"error", "Unsupported file type"})
 		return
 	}
 
-	realType := getType(realExt)
-	targetType := getType(targetExt)
-
-	// Block cross-type conversions
-	if realType != targetType && !req.Force {
-		logLine(logFile, "Blocked cross-type conversion")
-		sendResponse(Response{"error", "Illegal conversion"})
-		return
-	}
-
-	// Skip if already correct
-	if realExt == targetExt {
-		logLine(logFile, "No conversion needed")
-		sendResponse(Response{"ok", "No conversion needed"})
-		return
-	}
-
-	base := strings.TrimSuffix(input, filepath.Ext(input))
-	output := base + "." + targetExt
-
-	var temp string
-	if input == output {
-		temp = base + "_tmp." + targetExt
-	} else {
-		temp = output
-	}
-
-	logLine(logFile, "Temp: "+temp)
-
-	// Run FFmpeg
-	cmd := exec.Command("ffmpeg", "-y", "-i", input, temp)
-	out, err := cmd.CombinedOutput()
 	if err != nil {
-		logLine(logFile, "FFmpeg failed:")
-		logLine(logFile, string(out))
-		sendResponse(Response{"error", "FFmpeg failed"})
+		sendResponse(Response{"error", err.Error()})
 		return
-	}
-
-	logLine(logFile, "FFmpeg conversion successful")
-
-	// Replace original if needed
-	if input == output {
-		logLine(logFile, "Starting replace sequence")
-
-		success := false
-		for i := 0; i < 20; i++ {
-			os.Remove(input)
-			err = os.Rename(temp, input)
-			if err == nil {
-				success = true
-				logLine(logFile, "Rename succeeded")
-				break
-			}
-			time.Sleep(200 * time.Millisecond)
-		}
-
-		if !success {
-			logLine(logFile, "Final rename failed")
-			sendResponse(Response{"error", "Rename failed"})
-			return
-		}
 	}
 
 	logLine(logFile, "Conversion complete")
 	sendResponse(Response{"ok", "Conversion complete"})
-}
-
-func sendResponse(resp Response) {
-	data, _ := json.Marshal(resp)
-	length := uint32(len(data))
-	binary.Write(os.Stdout, binary.LittleEndian, length)
-	os.Stdout.Write(data)
 }

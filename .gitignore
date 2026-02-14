@@ -1,0 +1,21 @@
+# Go build outputs
+*.exe
+*.out
+*.dll
+
+# Logs
+*.log
+
+# Local install folder
+C:\ffconvert\
+ffconvert/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Extension private key (VERY IMPORTANT)
+extension.pem
+
+# Temporary files
+*.tmp
