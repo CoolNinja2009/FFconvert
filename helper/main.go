@@ -102,8 +102,6 @@ func main() {
 
 	if category == "media" {
 		err = convertMedia(input, targetExt, mime, logFile)
-	} else if category == "document" {
-		err = convertDocument(input, targetExt, mime, logFile)
 	} else {
 		logLine(logFile, "Unsupported file type")
 		sendResponse(Response{"error", "Unsupported file type"})
