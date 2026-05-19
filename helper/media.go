@@ -16,11 +16,6 @@ func detectCategory(mime string) string {
 		return "media"
 	}
 
-	if strings.HasPrefix(mime, "application/") ||
-		strings.HasPrefix(mime, "text/") {
-		return "document"
-	}
-
 	return "unknown"
 }
 
