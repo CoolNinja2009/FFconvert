@@ -33,7 +33,16 @@ No websites. No manual converters. No waiting.
 - **Video container conversions**:
   - mp4 ↔ mkv
   - webm → mp4/mkv
-- Uses FFmpeg for reliable conversions
+- **Audio conversions**:
+  - mp3, m4a, aac, wav, flac, ogg, opus
+  - Video → audio extraction
+  - Audio → video container
+- **Document conversions**:
+  - PDF ↔ txt/html
+  - DOCX ↔ txt/html/pdf
+  - Text files ↔ pdf/html
+- Uses FFmpeg for media conversions
+- Uses Pandoc for document conversions
 - Native Windows integration
 
 ## Requirements
@@ -41,11 +50,18 @@ No websites. No manual converters. No waiting.
 - Windows
 - [Go](https://golang.org/dl/) installed
 - [FFmpeg](https://ffmpeg.org/download.html) installed and in PATH
+- [Pandoc](https://pandoc.org/installing.html) installed and in PATH (for document conversions)
 
 Test FFmpeg:
 
 ```bash
 ffmpeg -version
+```
+
+Test Pandoc:
+
+```bash
+pandoc -v
 ```
 
 ## Installation
@@ -96,10 +112,13 @@ Installation complete.
 2. Change the extension in the save dialog.
 3. File converts automatically.
 
-**Example:**
+**Examples:**
 
 ```
 video.mp4 → save as video.mkv
+image.webp → save as image.png
+document.pdf → save as document.txt
+video.mp4 → save as audio.mp3
 ```
 
 ## Uninstall
@@ -113,18 +132,11 @@ uninstall.bat
 Then remove the extension from your browser.
 
 ## Roadmap
-## v2 Goals
-- Document conversions
-- Audio support
-- Modular conversion engine
-
 
 ### v2
-- Document conversions
-  - docx → txt
-  - pdf → text
-- Audio conversions
-- Conversion rules
+- Modular conversion engine
+- Extended format support
+- Performance optimizations
 
 ## Contributing
 
